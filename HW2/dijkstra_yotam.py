@@ -20,7 +20,7 @@ def dijkstra(puzzle):
     # the fringe is the queue to pop items from
     fringe = [(0, initial)]
     # concluded contains states that were already resolved
-    concluded = set([initial.to_string()])
+    concluded = {initial.to_string()}
     # a mapping from state (as a string) to the currently minimal distance (int).
     distances = {initial.to_string(): 0}
     # the return value of the algorithm, a mapping from a state (as a string) to the state leading to it (NOT as string)
