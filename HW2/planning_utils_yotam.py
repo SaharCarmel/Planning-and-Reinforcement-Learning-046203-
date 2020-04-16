@@ -7,12 +7,17 @@ def traverse(goal_state, prev):
     (goal_state, None)
     '''
     result = [(goal_state, None)]
-    prev_state, prev_action = prev[goal_state.to_string()]
-    while prev[prev_state.to_string()]:
-        result.insert(0, (prev_state, prev_action))
-        prev_state, prev_action = prev[prev_state.to_string()]
-    result.insert(0, (prev_state, prev_action))
-
+    current_state = goal_state
+    while prev[current_state.to_string()]:
+        prev_state = prev[current_state.to_string()]
+        to_cord = current_state._get_empty_location()
+        from_cord = prev_state._get_empty_location()
+        if to_cord[1] - from_cord[1]:
+            action = 'l' if (to_cord[1] - from_cord[1]) < 0 else 'r'
+        else:
+            action = 'u' if (to_cord[0] - from_cord[0]) < 0 else 'd'
+        result.insert(0, (prev_state, action))
+        current_state = prev_state
     return result
 
 
