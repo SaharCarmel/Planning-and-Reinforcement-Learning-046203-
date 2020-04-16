@@ -1,58 +1,50 @@
-transition_cost = [[0.1, 0.325, 0.25, 0.325], [0.4, 0, 0.4, 0.2], [0.2, 0.2, 0.2, 0.4], [1, 0, 0, 0]]
-actions = {
-    'B': 0,
-    'K': 1,
-    'O': 2,
-    '-': 3,
-}
+transition_cost = [[0.1, 0.325, 0.25, 0.325], [0.4, 0, 0.4, 0.2],
+                   [0.2, 0.2, 0.2, 0.4], [1, 0, 0, 0]]
+action_dict = {'B': 0, 'K': 1, 'O': 2, '-': 3, }
 
+def best_ending():
+    max_value_ending = {'B': None, 'K': None, 'O': None}
+    for state in ['B', 'K', 'O']:
+        max = 0
+        for action in ['B', 'K', 'O']:
+            trans_1 = transition_cost[action_dict[state]][action_dict[action]]
+            trans_2 = transition_cost[action_dict[action]][action_dict['-']]
+            value = trans_1 * trans_2
+            if value > max:
+                max = value
+                max_value_ending[state] = action
+    return max_value_ending
 
-def dp_sol(k):
-    word = 'B'
-    current_state = 'B'
+def best_2_steps():
+    max_value_2_step = {'B': None, 'K': None, 'O': None}
+    max_value_step = {'B': None, 'K': None, 'O': None}
+    transition_dicts = [max_value_step, max_value_2_step]
+    transition_1, transition_2 = 1, 1
+    for i in range(2):
+        update_dict = transition_dicts[i]
+        for state in ['B', 'K', 'O']:
+            max = 0
+            for action in ['B', 'K', 'O']:
+                transition_1 = transition_cost[action_dict[state]][
+                    action_dict[action]]
+                if i == 1:
+                    transition_2 = transition_cost[action_dict[action]][
+                        action_dict[max_value_step[action]]]
+                value = transition_1 * transition_2
+                if value > max:
+                    max = value
+                    update_dict[state] = action
+    return max_value_2_step
 
-    for i in range(k):
+"""calculate"""
+best_ending_dict = best_ending()
+double_step_dict = best_2_steps()
+"""run"""
+k = 5
+current_state = 'B'
+print(current_state, end='')
+for x in range(k - 2):
+    current_state = double_step_dict[current_state]
+    print(current_state, end='')
+print(best_ending_dict[current_state])
 
-
-    get_best_action()
-
-    return word
-
-
-print(dp_sol(5))
-
-# import math
-#
-# def mostProbableWord(K,P):
-#     C=math.log(1./P)
-#     hist=['B','K','O']
-#     charWord= K * [0]
-#     temp=[float('inf')]* K #1=b,2=k,3=o
-#     Vk = [[temp],[temp],[temp]]
-#     for stage in reversed(range(K)):
-#         if stage==K: #that means we are at the stage before '-':
-#             for letter in range(3):
-#                 Vk[letter][K]=C(letter,4) math.log(letter)
-#
-#         elif stage!=1 and stage!=K:
-#             for letter=1:3
-#                 Vk(letter,stage)=min(C(letter,1:3)+Vk(1:3,stage+1)')
-#
-#         else: # means stage=1
-#             Vk(1,stage)=min(C(1,1:3)+Vk(1:3,stage+1)')
-#         #the other two letters in the first stage are ignored !
-#
-#
-# charWord(1)=hist(1)
-# for stage=2:K
-#  if stage==2
-#  [p,index]=min(C(1,1:3)+Vk(1:3,stage)')
-#  charWord(stage)=hist(index)
-#  prev_index=index
-#  else
-#  [p,index]=min(C(prev_index,1:3)+Vk(1:3,stage)')
-#  charWord(stage)=hist(index)
-#  prev_index=index
-#  end
-# end
-# word=string(charWord)
