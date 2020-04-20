@@ -78,8 +78,8 @@ class State:
             # diff = 1 if self_location == other_location else 0  # incorrect-tile heuristic
             diff = abs(self_location[0] - other_location[0]) + abs(self_location[1] - other_location[1])
             total_distance += diff
-
-        return total_distance
+        alpha = 1  # for h_alpha heuristic (Q2_pt5)
+        return total_distance * alpha
 
     def is_same(self, other):
         return self.get_manhattan_distance(other) == 0
