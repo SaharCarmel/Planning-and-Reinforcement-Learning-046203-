@@ -4,7 +4,7 @@ import os
 class State:
     def __init__(self, s=None):
         if s is None:
-            self._array = [[str(3*i + j) for j in range(3)] for i in range(3)]
+            self._array = [[str(3 * i + j) for j in range(3)] for i in range(3)]
         else:
             array = [[c for c in line.split(' ')] for line in s.split(os.linesep)]
             assert len(array) == 3
@@ -16,7 +16,6 @@ class State:
         result = State()
         result._array = [[c for c in a] for a in self._array]
         return result
-
 
     def _get_location_char(self, c):
         for i in range(3):
@@ -67,7 +66,8 @@ class State:
         elif a == 'r':
             pos2[1] += 1
         pos2 = tuple(pos2)
-        new_state._array[pos2[0]][pos2[1]], new_state._array[pos1[0]][pos1[1]] = new_state._array[pos1[0]][pos1[1]], new_state._array[pos2[0]][pos2[1]]
+        new_state._array[pos2[0]][pos2[1]], new_state._array[pos1[0]][pos1[1]] = new_state._array[pos1[0]][pos1[1]], \
+                                                                                 new_state._array[pos2[0]][pos2[1]]
         return new_state
 
     def get_manhattan_distance(self, other):
@@ -75,8 +75,10 @@ class State:
         for i in range(1, 9):
             self_location = self._get_location_char(str(i))
             other_location = other._get_location_char(str(i))
+            # diff = 1 if self_location == other_location else 0  # incorrect-tile heuristic
             diff = abs(self_location[0] - other_location[0]) + abs(self_location[1] - other_location[1])
             total_distance += diff
+
         return total_distance
 
     def is_same(self, other):

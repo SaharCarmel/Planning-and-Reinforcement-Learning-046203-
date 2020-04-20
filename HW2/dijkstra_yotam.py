@@ -26,7 +26,7 @@ def dijkstra(puzzle):
     # the return value of the algorithm, a mapping from a state (as a string) to the state leading to it (NOT as string)
     # that achieves the minimal distance to the starting state of puzzle.
     prev = {initial.to_string(): None}
-
+    expanded = 0
     while len(fringe) > 0:
 
         current_priority, current_state = heapq.heappop(fringe)
@@ -36,6 +36,7 @@ def dijkstra(puzzle):
             if new_state.to_string() in concluded:
                 print("ignored {} with priority {}".format(new_state, current_priority + 1))
             else:
+                expanded+=1
                 heapq.heappush(fringe, (current_priority + 1, new_state))
                 distances[new_state.to_string()] = current_priority + 1
                 prev[new_state.to_string()] = current_state
@@ -45,6 +46,7 @@ def dijkstra(puzzle):
             if new_state.to_string() == goal.to_string():
                 fringe = []
                 break
+    print('expanded', expanded)
     return prev
 
 
@@ -68,6 +70,10 @@ if __name__ == '__main__':
     goal_state = initial_state
     for a in actions:
         goal_state = goal_state.apply_action(a)
+
+    """hard state for Q2_pt4"""
+    # goal_state = State(s='8 6 7\n2 5 4\n3 0 1')
+
     puzzle = Puzzle(initial_state, goal_state)
     print('original number of actions:{}'.format(len(actions)))
     solution_start_time = datetime.datetime.now()
