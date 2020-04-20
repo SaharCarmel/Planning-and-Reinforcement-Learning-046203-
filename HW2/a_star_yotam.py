@@ -30,6 +30,7 @@ def a_star(puzzle):
     # that achieves the minimal distance to the starting state of puzzle.
     prev = {initial.to_string(): None}
 
+    concluded.add(initial.to_string())
     while len(fringe) > 0:
         # remove the following line and complete the algorithm
         current_priority, current_state = heapq.heappop(fringe)
@@ -38,7 +39,6 @@ def a_star(puzzle):
             new_state = current_state.apply_action(a)
             new_heuristic = new_state.get_manhattan_distance(goal)
             new_priority = new_heuristic + distances[current_state.to_string()] + 1
-
 
             #TODO not working properly
             if new_state.to_string() in concluded:
@@ -51,7 +51,7 @@ def a_star(puzzle):
                 distances[new_state.to_string()] = distances[current_state.to_string()] + 1
                 prev[new_state.to_string()] = current_state
                 concluded.add(new_state.to_string())
-                print("did not ignore {} with priority {}".format(current_state, new_priority))
+                print("did not ignore {} with priority {}".format(new_state, new_priority))
 
             if new_state.to_string() == goal.to_string():
                 fringe = []
