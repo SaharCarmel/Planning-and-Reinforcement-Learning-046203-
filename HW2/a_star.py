@@ -40,7 +40,6 @@ def a_star(puzzle):
             new_heuristic = new_state.get_manhattan_distance(goal)
             new_priority = new_heuristic + distances[current_state.to_string()] + 1
 
-            #TODO not working properly
             if new_state.to_string() in concluded:
                 # if new_priority < distances[new_state.to_string()] + new_heuristic:
                 #     prev[new_state.to_string()] = current_state
