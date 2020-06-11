@@ -8,7 +8,7 @@ import numpy as np
 
 def run_VI(policy):
     V = {x: 0 for x in S}
-    for iteration in range(n_VI_iterations):
+    for iteration in range(VI_iterations):
         V = VI(policy, V)
     return V
 
@@ -78,15 +78,77 @@ def PI(initial_policy):
     return new_policy, initial_states_per_iteration
 
 
+def TD_0(pi, V, real_V, step_size):
+    visits = {x: 0 for x in S}
+    max_errs = []
+    initial_state_errs = []
+    for i in range(TD_0_iterations):
+        """sample random state"""
+        state = S[random.randint(1, len(S) - 1)]
+        visits[state] += 1
+        """use policy action for this state"""
+        action = pi[state]
+        cost, next_state = simulate(state, action)
+        """step size"""
+        if not step_size:
+            alpha = 1 / visits[state]
+        elif step_size == 1:
+            alpha = 0.01
+        else:
+            alpha = 10 / (100 + visits[state])
+        """TD 0 update"""
+        V[state] = V[state] + alpha * (cost + V[next_state] - V[state])
+        """error per iteration calculation"""
+        max_errs.append(max([real_V[s] - V[s] for s in S]))
+        initial_state_errs.append(real_V[(1, 2, 3, 4, 5)] - V[(1, 2, 3, 4, 5)])
 
-def TD_0(initial_policy):
-    pass
+    return V, max_errs, initial_state_errs
+
+
+def TD_lambda(pi, V, real_V, step_size, lmbda):
+    visits = {x: 0 for x in S}
+    max_errs = []
+    initial_state_errs = []
+    for i in range(TD_0_iterations):
+        """sample random state"""
+        state = S[random.randint(1, len(S) - 1)]
+        visits[state] += 1
+        """use policy action for this state"""
+        action = pi[state]
+        cost, next_state = simulate(state, action)
+        """step size"""
+        if not step_size:
+            alpha = 1 / visits[state]
+        elif step_size == 1:
+            alpha = 0.01
+        else:
+            alpha = 10 / (100 + visits[state])
+        """TD lambda update"""
+        current_state = state
+        d, i = 0, 0
+        while next_state != S[0]:
+            step_cost = lmbda ** i * (cost + V[next_state] - V[current_state])
+            d += step_cost
+            if step_cost < epsilon:
+                break
+            current_state = next_state
+            action = pi[current_state]
+            cost, next_state = simulate(current_state, action)
+            i+=1
+
+        V[state] = V[state] + alpha * d
+
+        """error per iteration calculation"""
+        max_errs.append(max([real_V[s] - V[s] for s in S]))
+        initial_state_errs.append(real_V[(1, 2, 3, 4, 5)] - V[(1, 2, 3, 4, 5)])
+
+    return V, max_errs, initial_state_errs
 
 
 def simulate(s, a):
     cost = reward(s)
     success = 1 if random.random() < Mu[a] else 0
-    next_state = tuple(set(s).difference([a])) if success else s
+    next_state = tuple(set(s).difference([a]) or [0]) if success else s
     return cost, next_state
 
 
@@ -130,19 +192,89 @@ def pt_e():
     plt.show()
 
 
+def pt_g():
+    policy = max_cost_pi()
+    real_vals = run_VI(policy)
+    V_approxs, max_errs_lists, initial_state_errs_lists = [], [], []
+    for i in range(3):
+        initial_V = {x: 0 for x in S}
+        V_approx_i, max_errs_i, initial_state_errs_i = TD_0(policy, initial_V, real_vals, i)
+        V_approxs.append(V_approx_i)
+        max_errs_lists.append(max_errs_i)
+        initial_state_errs_lists.append(initial_state_errs_i)
+
+    fig1, ax1 = plt.subplots()
+    x = np.arange(len(max_errs_lists[0]))
+    ax1.plot(x, max_errs_lists[0], label='alpha = 1/n_visitst')
+    ax1.plot(x, max_errs_lists[1], label='alpha = 0.01')
+    ax1.plot(x, max_errs_lists[2], label='alpha = 10/(100+n_visits)')
+    ax1.set_ylabel('Max State Value Error')
+    ax1.set_title('TD_0 Max State Value Error by Iteration')
+    ax1.legend()
+    fig1.tight_layout()
+    plt.show()
+
+    fig2, ax2 = plt.subplots()
+    x = np.arange(len(max_errs_lists[0]))
+    ax2.plot(x, initial_state_errs_lists[0], label='alpha = 1/n_visitst')
+    ax2.plot(x, initial_state_errs_lists[1], label='alpha = 0.01')
+    ax2.plot(x, initial_state_errs_lists[2], label='alpha = 10/(100+n_visits)')
+    ax2.set_ylabel('Initial State Value Error')
+    ax2.set_title('TD_0 Initial State Value Error by Iteration')
+    ax2.legend()
+    fig2.tight_layout()
+    plt.show()
+
+
+def pt_h():
+    policy = max_cost_pi()
+    real_vals = run_VI(policy)
+    max_errs_lists, initial_state_errs_lists = [],[]
+    lambdas = [0.1, 0.5, 0.9, 1]
+    for l in lambdas:
+        max_err, initial_state_err = np.zeros(TD_0_iterations), np.zeros(TD_0_iterations)
+        for i in range(20):
+            initial_V = {x: 0 for x in S}
+            V_approx_i, max_err_i, initial_state_err_i = TD_lambda(policy, initial_V, real_vals, 2, l)
+            max_err += np.array(max_err_i)
+            initial_state_err += np.array(initial_state_err_i)
+        max_errs_lists.append(max_err/20)
+        initial_state_errs_lists.append(initial_state_err/20)
+
+    fig1, ax1 = plt.subplots()
+    x = np.arange(len(max_errs_lists[0]))
+    ax1.plot(x, max_errs_lists[0], label='lambda = ' + str(lambdas[0]))
+    ax1.plot(x, max_errs_lists[1], label='lambda = ' + str(lambdas[1]))
+    ax1.plot(x, max_errs_lists[2], label='lambda = ' + str(lambdas[2]))
+    ax1.plot(x, max_errs_lists[3], label='lambda = ' + str(lambdas[3]))
+    ax1.set_ylabel('Max State Value Error')
+    ax1.set_title('TD_lambda Max State Value Error by Iteration')
+    ax1.legend()
+    fig1.tight_layout()
+    plt.show()
+
+    fig2, ax2 = plt.subplots()
+    x = np.arange(len(max_errs_lists[0]))
+    ax2.plot(x, initial_state_errs_lists[0], label='lambda = ' + str(lambdas[0]))
+    ax2.plot(x, initial_state_errs_lists[1], label='lambda = ' + str(lambdas[1]))
+    ax2.plot(x, initial_state_errs_lists[2], label='lambda = ' + str(lambdas[2]))
+    ax2.plot(x, initial_state_errs_lists[3], label='lambda = ' + str(lambdas[3]))
+    ax2.set_ylabel('Initial State Value Error')
+    ax2.set_title('TD_lambda Initial State Value Error by Iteration')
+    ax2.legend()
+    fig2.tight_layout()
+    plt.show()
+
+
 """Globals"""
 Mu = [0, 0.6, 0.5, 0.3, 0.7, 0.1]
 C = [0, 1, 4, 6, 2, 9]
 S = [(0,)]
 for i in range(5):
     S += list(combinations([1, 2, 3, 4, 5], i + 1))
-n_VI_iterations = 250
-
-
-def pt_g():
-    V = {x: 0 for x in S}
-    for i in range(3):
-        pass
+VI_iterations = 250
+TD_0_iterations = 100000
+epsilon = 1e-6
 
 if __name__ == '__main__':
     c_mu_policy_value = run_VI(c_mu_pi())
@@ -150,20 +282,17 @@ if __name__ == '__main__':
     optimal_policy, initial_state_vals = PI(max_cost_pi())
     optimal_policy_value = run_VI(optimal_policy)
 
-    simulate((1, 2, 3, 4), 2)
     """PART 1"""
     # pt_c()
     # pt_d()
     # pt_e()
     """PART 2"""
-    pt_g()
+    # pt_g()
     pt_h()
-    pt_i()
-    pt_j()
+    # pt_i()
+    # pt_j()
 
-    c_mu_policy_value = run_VI(c_mu_pi())
-    max_cost_policy_value = run_VI(max_cost_pi())
-
-    simulate((1, 2, 3, 4), 2)
-
-
+    # c_mu_policy_value = run_VI(c_mu_pi())
+    # max_cost_policy_value = run_VI(max_cost_pi())
+    #
+    # simulate((1, 2, 3, 4), 2)
