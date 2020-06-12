@@ -134,7 +134,7 @@ def TD_lambda(pi, V, real_V, step_size, lmbda):
             current_state = next_state
             action = pi[current_state]
             cost, next_state = simulate(current_state, action)
-            i+=1
+            i += 1
 
         V[state] = V[state] + alpha * d
 
@@ -229,7 +229,7 @@ def pt_g():
 def pt_h():
     policy = max_cost_pi()
     real_vals = run_VI(policy)
-    max_errs_lists, initial_state_errs_lists = [],[]
+    max_errs_lists, initial_state_errs_lists = [], []
     lambdas = [0.1, 0.5, 0.9, 1]
     for l in lambdas:
         max_err, initial_state_err = np.zeros(TD_0_iterations), np.zeros(TD_0_iterations)
@@ -238,8 +238,8 @@ def pt_h():
             V_approx_i, max_err_i, initial_state_err_i = TD_lambda(policy, initial_V, real_vals, 2, l)
             max_err += np.array(max_err_i)
             initial_state_err += np.array(initial_state_err_i)
-        max_errs_lists.append(max_err/20)
-        initial_state_errs_lists.append(initial_state_err/20)
+        max_errs_lists.append(max_err / 20)
+        initial_state_errs_lists.append(initial_state_err / 20)
 
     fig1, ax1 = plt.subplots()
     x = np.arange(len(max_errs_lists[0]))
@@ -266,6 +266,130 @@ def pt_h():
     plt.show()
 
 
+def greedy_exploration(Q_vals, state, e):
+    if random.random() <= Q_learning_epsilon[e]:
+        action = random.choice(list(state))
+    else:  # greedy
+        sorted_Qs = sorted([[Q_vals[(state, a)], a] for a in state])
+        action = sorted_Qs[0][1]
+
+    return state, action
+
+
+def get_Q_greedy_policy_values(Q_vals):
+    V = {x:float('inf') for x in S}
+    for q in Q_vals:
+        if V[q[0]] > Q_vals[q]:
+            V[q[0]] = Q_vals[q]
+    return V
+
+
+def Q_learning(Q, optimal_V, step_size, eps_n):
+    max_errs = []
+    visits = copy.copy(Q)
+    initial_state_errs = []
+    for i in range(TD_0_iterations):
+        """sample random state"""
+        state = S[random.randint(1, len(S) - 1)]
+        """random action for this state"""
+        action = random.choice(list(state))
+        visits[state, action] += 1
+        cost, next_state = simulate(state, action)
+        """step size"""
+        if not step_size:
+            alpha = 1 / visits[state, action]
+        elif step_size == 1:
+            alpha = 0.01
+        else:
+            alpha = 10 / (100 + visits[state, action])
+        """get next state Q"""
+        next_Q = greedy_exploration(Q, next_state, eps_n)
+        """Q update"""
+        Q[state, action] = Q[state, action] + alpha * (cost + Q[next_Q] - Q[state, action])
+
+        """error per iteration calculation"""
+        greedy_vals = get_Q_greedy_policy_values(Q)
+        max_errs.append(max([optimal_V[s] - greedy_vals[s] for s in S]))
+        initial_state_errs.append(optimal_V[(1, 2, 3, 4, 5)] - greedy_vals[(1, 2, 3, 4, 5)])
+
+    return Q, max_errs, initial_state_errs
+
+
+def pt_i():
+    initial_Q = {}
+    for s in S:
+        for a in s:
+            initial_Q[s, a] = 0
+    optimal_policy = c_mu_pi()
+    optimal_policy_vals = run_VI(optimal_policy)
+    Q_learned, max_errs_lists, initial_state_errs_lists = [], [], []
+    for i in range(3):
+        empty_Q = copy.copy(initial_Q)
+        Q_i, max_errs_i, initial_state_errs_i = Q_learning(empty_Q, optimal_policy_vals, i, eps_n=0)
+
+        Q_learned.append(Q_i)
+        max_errs_lists.append(max_errs_i)
+        initial_state_errs_lists.append(initial_state_errs_i)
+
+    fig1, ax1 = plt.subplots()
+    x = np.arange(len(max_errs_lists[0]))
+    ax1.plot(x, max_errs_lists[0], label='alpha = 1/n_visitst')
+    ax1.plot(x, max_errs_lists[1], label='alpha = 0.01')
+    ax1.plot(x, max_errs_lists[2], label='alpha = 10/(100+n_visits)')
+    ax1.set_ylabel('Max State Value Error')
+    ax1.set_title('Q-Learning Max State Value Error by Iteration')
+    ax1.legend()
+    fig1.tight_layout()
+    plt.show()
+
+    fig2, ax2 = plt.subplots()
+    x = np.arange(len(max_errs_lists[0]))
+    ax2.plot(x, initial_state_errs_lists[0], label='alpha = 1/n_visit')
+    ax2.plot(x, initial_state_errs_lists[1], label='alpha = 0.01')
+    ax2.plot(x, initial_state_errs_lists[2], label='alpha = 10/(100+n_visits)')
+    ax2.set_ylabel('Initial State Value Error')
+    ax2.set_title('Q-Learning Initial State Value Error by Iteration')
+    ax2.legend()
+    fig2.tight_layout()
+    plt.show()
+
+
+def pt_j():
+    initial_Q = {}
+    for s in S:
+        for a in s:
+            initial_Q[s, a] = 0
+    optimal_policy = c_mu_pi()
+    optimal_policy_vals = run_VI(optimal_policy)
+    Q_learned, max_errs_lists, initial_state_errs_lists = [], [], []
+    for i in range(2):
+        empty_Q = copy.copy(initial_Q)
+        Q_i, max_errs_i, initial_state_errs_i = Q_learning(empty_Q, optimal_policy_vals, step_size=2, eps_n=i)
+        Q_learned.append(Q_i)
+        max_errs_lists.append(max_errs_i)
+        initial_state_errs_lists.append(initial_state_errs_i)
+
+    fig1, ax1 = plt.subplots()
+    x = np.arange(len(max_errs_lists[0]))
+    ax1.plot(x, max_errs_lists[0], label='epsilon = 0.1')
+    ax1.plot(x, max_errs_lists[1], label='epsilon = 0.01')
+    ax1.set_ylabel('Max State Value Error')
+    ax1.set_title('Q-Learning Max State Value Error by Iteration with alpha = 10/(100+n_visits)')
+    ax1.legend()
+    fig1.tight_layout()
+    plt.show()
+
+    fig2, ax2 = plt.subplots()
+    x = np.arange(len(max_errs_lists[0]))
+    ax2.plot(x, initial_state_errs_lists[0], label='epsilon = 0.1')
+    ax2.plot(x, initial_state_errs_lists[1], label='epsilon = 0.01')
+    ax2.set_ylabel('Initial State Value Error')
+    ax2.set_title('Q-Learning Initial State Value Error by Iteration with alpha = 10/(100+n_visits)')
+    ax2.legend()
+    fig2.tight_layout()
+    plt.show()
+
+
 """Globals"""
 Mu = [0, 0.6, 0.5, 0.3, 0.7, 0.1]
 C = [0, 1, 4, 6, 2, 9]
@@ -273,8 +397,9 @@ S = [(0,)]
 for i in range(5):
     S += list(combinations([1, 2, 3, 4, 5], i + 1))
 VI_iterations = 250
-TD_0_iterations = 100000
+TD_0_iterations = 10000
 epsilon = 1e-6
+Q_learning_epsilon = [0.1, 0.01]
 
 if __name__ == '__main__':
     c_mu_policy_value = run_VI(c_mu_pi())
@@ -288,9 +413,9 @@ if __name__ == '__main__':
     # pt_e()
     """PART 2"""
     # pt_g()
-    pt_h()
+    # pt_h()
     # pt_i()
-    # pt_j()
+    pt_j()
 
     # c_mu_policy_value = run_VI(c_mu_pi())
     # max_cost_policy_value = run_VI(max_cost_pi())
