@@ -5,20 +5,21 @@ cards = [2, 3, 4, 5, 6, 7, 8, 9, 10, 'jack', 'queen', 'king', 11]
 
 
 class State():
-    def __init__(self, X, Y):
+    def __init__(self, X, Y, gamma=0.8):
         self.X = X
+        self.gamma = gamma
         self.Y = Y
         self.value = 0
         self.lastValue = 0
 
     def iterate(self, stateSpace):
-        stick = self.calculateReward('stick', self.X, self.Y) + self.lastValue
+        stick = self.calculateReward('stick', self.X, self.Y) + self.gamma *self.lastValue
         hit = 0
         for state in stateSpace:
             if self.isPossibleState(state):
                 transProb = self.calcTransProb(state)
                 hit += state.lastValue*transProb
-        hit += self.calculateReward('hit', self.X, self.Y)
+        hit = self.calculateReward('hit', self.X, self.Y) + self.gamma * hit
         self.lastValue = self.value
         self.value = max(hit, stick)
     def calculateReward(self, a, X, Y):
@@ -26,7 +27,9 @@ class State():
             dealer = Dealer(X, Y)
             return dealer.play()
         else:
-            return 0
+            nextCard = np.random.randint(2, 11+1)
+            dealer = Dealer(X+nextCard, Y)
+            return dealer.play()
 
     def isPossibleState(self, state):
         stateX = state.X
@@ -56,8 +59,14 @@ class Dealer():
     def play(self):
         nextCard = np.random.randint(2, 11+1)
         self.Y = self.Y + nextCard
-        if self.Y > 21:
+        if self.X > 21:
+            return -1
+        elif self.X == 21:
             return 1
+        elif self.Y > 21:
+            return 1
+        elif self.Y == 21:
+            return -1
         elif self.Y < 17:
             return self.play()
         else:
@@ -88,7 +97,7 @@ if __name__ == '__main__':
     for x in X:
         for y in Y:
             stateSpace.append(State(x, y))
-    printValueSpace(stateSpace)
+    # printValueSpace(stateSpace)
     for i in range(20):
         for state in stateSpace:
             state.iterate(stateSpace)
