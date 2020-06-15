@@ -85,24 +85,55 @@ def TD_0(pi, V, real_V, step_size):
     for i in range(TD_0_iterations):
         """sample random state"""
         state = S[random.randint(1, len(S) - 1)]
-        visits[state] += 1
-        """use policy action for this state"""
-        action = pi[state]
-        cost, next_state = simulate(state, action)
-        """step size"""
-        if not step_size:
-            alpha = 1 / visits[state]
-        elif step_size == 1:
-            alpha = 0.01
-        else:
-            alpha = 10 / (100 + visits[state])
-        """TD 0 update"""
-        V[state] = V[state] + alpha * (cost + V[next_state] - V[state])
+        while state != (0,):
+            visits[state] += 1
+            """use policy action for this state"""
+            action = pi[state]
+            cost, next_state = simulate(state, action)
+            """step size"""
+            if not step_size:
+                alpha = 1 / visits[state]
+            elif step_size == 1:
+                alpha = 0.01
+            else:
+                alpha = 10 / (100 + visits[state])
+            """TD 0 update"""
+            V[state] = V[state] + alpha * (cost + V[next_state] - V[state])
+            state = next_state
+
         """error per iteration calculation"""
-        max_errs.append(max([real_V[s] - V[s] for s in S]))
-        initial_state_errs.append(real_V[(1, 2, 3, 4, 5)] - V[(1, 2, 3, 4, 5)])
+        max_errs.append(max([abs(real_V[s] - V[s]) for s in S]))
+        initial_state_errs.append(abs(real_V[(1, 2, 3, 4, 5)] - V[(1, 2, 3, 4, 5)]))
 
     return V, max_errs, initial_state_errs
+
+
+# def TD_0(pi, V, real_V, step_size):
+#     visits = {x: 0 for x in S}
+#     max_errs = []
+#     initial_state_errs = []
+#     for i in range(TD_0_iterations):
+#         """sample random state"""
+#         state = S[random.randint(1, len(S) - 1)]
+#         visits[state] += 1
+#         """use policy action for this state"""
+#         action = pi[state]
+#         cost, next_state = simulate(state, action)
+#         """step size"""
+#         if not step_size:
+#             alpha = 1 / visits[state]
+#         elif step_size == 1:
+#             alpha = 0.01
+#         else:
+#             alpha = 10 / (100 + visits[state])
+#         """TD 0 update"""
+#         V[state] = V[state] + alpha * (cost + V[next_state] - V[state])
+#
+#         """error per iteration calculation"""
+#         max_errs.append(max([real_V[s] - V[s] for s in S]))
+#         initial_state_errs.append(real_V[(1, 2, 3, 4, 5)] - V[(1, 2, 3, 4, 5)])
+#
+#     return V, max_errs, initial_state_errs
 
 
 def TD_lambda(pi, V, real_V, step_size, lmbda):
@@ -125,22 +156,22 @@ def TD_lambda(pi, V, real_V, step_size, lmbda):
             alpha = 10 / (100 + visits[state])
         """TD lambda update"""
         current_state = state
-        d, i = 0, 0
+        d, j = 0, 0
         while next_state != S[0]:
-            step_cost = lmbda ** i * (cost + V[next_state] - V[current_state])
+            step_cost = lmbda ** j * (cost + V[next_state] - V[current_state])
             d += step_cost
             if step_cost < epsilon:
                 break
             current_state = next_state
             action = pi[current_state]
             cost, next_state = simulate(current_state, action)
-            i += 1
+            j += 1
 
         V[state] = V[state] + alpha * d
 
         """error per iteration calculation"""
         max_errs.append(max([real_V[s] - V[s] for s in S]))
-        initial_state_errs.append(real_V[(1, 2, 3, 4, 5)] - V[(1, 2, 3, 4, 5)])
+        initial_state_errs.append(abs(real_V[(1, 2, 3, 4, 5)] - V[(1, 2, 3, 4, 5)]))
 
     return V, max_errs, initial_state_errs
 
@@ -205,7 +236,7 @@ def pt_g():
 
     fig1, ax1 = plt.subplots()
     x = np.arange(len(max_errs_lists[0]))
-    ax1.plot(x, max_errs_lists[0], label='alpha = 1/n_visitst')
+    ax1.plot(x, max_errs_lists[0], label='alpha = 1/n_visits')
     ax1.plot(x, max_errs_lists[1], label='alpha = 0.01')
     ax1.plot(x, max_errs_lists[2], label='alpha = 10/(100+n_visits)')
     ax1.set_ylabel('Max State Value Error')
@@ -216,7 +247,7 @@ def pt_g():
 
     fig2, ax2 = plt.subplots()
     x = np.arange(len(max_errs_lists[0]))
-    ax2.plot(x, initial_state_errs_lists[0], label='alpha = 1/n_visitst')
+    ax2.plot(x, initial_state_errs_lists[0], label='alpha = 1/n_visits')
     ax2.plot(x, initial_state_errs_lists[1], label='alpha = 0.01')
     ax2.plot(x, initial_state_errs_lists[2], label='alpha = 10/(100+n_visits)')
     ax2.set_ylabel('Initial State Value Error')
@@ -277,7 +308,7 @@ def greedy_exploration(Q_vals, state, e):
 
 
 def get_Q_greedy_policy_values(Q_vals):
-    V = {x:float('inf') for x in S}
+    V = {x: float('inf') for x in S}
     for q in Q_vals:
         if V[q[0]] > Q_vals[q]:
             V[q[0]] = Q_vals[q]
@@ -309,8 +340,8 @@ def Q_learning(Q, optimal_V, step_size, eps_n):
 
         """error per iteration calculation"""
         greedy_vals = get_Q_greedy_policy_values(Q)
-        max_errs.append(max([optimal_V[s] - greedy_vals[s] for s in S]))
-        initial_state_errs.append(optimal_V[(1, 2, 3, 4, 5)] - greedy_vals[(1, 2, 3, 4, 5)])
+        max_errs.append(max([abs(optimal_V[s] - greedy_vals[s]) for s in S]))
+        initial_state_errs.append(abs(optimal_V[(1, 2, 3, 4, 5)] - greedy_vals[(1, 2, 3, 4, 5)]))
 
     return Q, max_errs, initial_state_errs
 
@@ -333,7 +364,7 @@ def pt_i():
 
     fig1, ax1 = plt.subplots()
     x = np.arange(len(max_errs_lists[0]))
-    ax1.plot(x, max_errs_lists[0], label='alpha = 1/n_visitst')
+    ax1.plot(x, max_errs_lists[0], label='alpha = 1/n_visits')
     ax1.plot(x, max_errs_lists[1], label='alpha = 0.01')
     ax1.plot(x, max_errs_lists[2], label='alpha = 10/(100+n_visits)')
     ax1.set_ylabel('Max State Value Error')
@@ -344,7 +375,7 @@ def pt_i():
 
     fig2, ax2 = plt.subplots()
     x = np.arange(len(max_errs_lists[0]))
-    ax2.plot(x, initial_state_errs_lists[0], label='alpha = 1/n_visit')
+    ax2.plot(x, initial_state_errs_lists[0], label='alpha = 1/n_visits')
     ax2.plot(x, initial_state_errs_lists[1], label='alpha = 0.01')
     ax2.plot(x, initial_state_errs_lists[2], label='alpha = 10/(100+n_visits)')
     ax2.set_ylabel('Initial State Value Error')
@@ -374,7 +405,7 @@ def pt_j():
     ax1.plot(x, max_errs_lists[0], label='epsilon = 0.1')
     ax1.plot(x, max_errs_lists[1], label='epsilon = 0.01')
     ax1.set_ylabel('Max State Value Error')
-    ax1.set_title('Q-Learning Max State Value Error by Iteration with alpha = 10/(100+n_visits)')
+    ax1.set_title('Q-Learning Max State Value Error by Iteration with alpha[2]')
     ax1.legend()
     fig1.tight_layout()
     plt.show()
@@ -384,7 +415,7 @@ def pt_j():
     ax2.plot(x, initial_state_errs_lists[0], label='epsilon = 0.1')
     ax2.plot(x, initial_state_errs_lists[1], label='epsilon = 0.01')
     ax2.set_ylabel('Initial State Value Error')
-    ax2.set_title('Q-Learning Initial State Value Error by Iteration with alpha = 10/(100+n_visits)')
+    ax2.set_title('Q-Learning Initial State Value Error by Iteration with alpha[2]')
     ax2.legend()
     fig2.tight_layout()
     plt.show()
@@ -397,7 +428,7 @@ S = [(0,)]
 for i in range(5):
     S += list(combinations([1, 2, 3, 4, 5], i + 1))
 VI_iterations = 250
-TD_0_iterations = 10000
+TD_0_iterations = 100000
 epsilon = 1e-6
 Q_learning_epsilon = [0.1, 0.01]
 
@@ -412,12 +443,7 @@ if __name__ == '__main__':
     # pt_d()
     # pt_e()
     """PART 2"""
-    # pt_g()
+    pt_g()
     # pt_h()
     # pt_i()
-    pt_j()
-
-    # c_mu_policy_value = run_VI(c_mu_pi())
-    # max_cost_policy_value = run_VI(max_cost_pi())
-    #
-    # simulate((1, 2, 3, 4), 2)
+    # pt_j()
