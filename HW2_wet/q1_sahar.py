@@ -136,6 +136,7 @@ if __name__ == '__main__':
     fig = plt.figure(figsize=[12, 8])
     ax = fig.add_subplot(111)
     ax.scatter(Y, minVal)
+    ax.set_title('The minimal value for which the policy sticks')
     ax.set_ylabel('Player sum (X)')
     ax.set_xlabel('Dealers showing (Y)')
     plt.ylim([4, 21])
