@@ -1,6 +1,6 @@
 import numpy as np
 import time
-
+import matplotlib.pyplot as plt
 from data_transformer import DataTransformer
 from mountain_car_with_data_collection import MountainCarWithResetEnv
 from radial_basis_function_extractor import RadialBasisFunctionExtractor
@@ -12,7 +12,7 @@ class Solver:
         self._max_normal = 1
         # get state \action information
         self.data_transformer = DataTransformer()
-        state_mean = [-3.00283763e-01,  5.61618575e-05]
+        state_mean = [-3.00283763e-01, 5.61618575e-05]
         state_std = [0.51981243, 0.04024895]
         self.data_transformer.set(state_mean, state_std)
         self._actions = number_of_actions
@@ -34,7 +34,7 @@ class Solver:
         return features
 
     def get_q_val(self, features, action):
-        theta_ = self.theta[action*self.number_of_features: (1 + action)*self.number_of_features]
+        theta_ = self.theta[action * self.number_of_features: (1 + action) * self.number_of_features]
         return np.dot(features, theta_)
 
     def get_all_q_vals(self, features):
@@ -56,8 +56,17 @@ class Solver:
 
     def update_theta(self, state, action, reward, next_state, done):
         # compute the new weights and set in self.theta. also return the bellman error (for tracking).
-        assert False, "implement update_theta"
-        return 0.0
+        if done:
+            return 0
+        else:
+            features = self.get_state_action_features(state, action)
+            state_features = self.get_features(state)
+            q_current_state = self.get_q_val(state_features, action)
+            max_action = self.get_max_action(next_state)
+            q_next_state = self.get_q_val(state_features, max_action)
+            bellman_error = reward + gamma * q_next_state - q_current_state
+            self.theta = self.theta + self.learning_rate * bellman_error * features
+        return bellman_error
 
 
 def modify_reward(reward):
@@ -102,45 +111,101 @@ def run_episode(env, solver, is_train=True, epsilon=None, max_steps=200, render=
 
 if __name__ == "__main__":
     env = MountainCarWithResetEnv()
-    seed = 123
-    # seed = 234
-    # seed = 345
-    np.random.seed(seed)
-    env.seed(seed)
+    seeds = [123]  # , 234, 345]
 
-    gamma = 0.99
+    gamma = 0.999
     learning_rate = 0.01
     epsilon_current = 0.1
     epsilon_decrease = 1.
     epsilon_min = 0.05
 
-    max_episodes = 100000
+    max_episodes = 10000
 
     solver = Solver(
         # learning parameters
         gamma=gamma, learning_rate=learning_rate,
         # feature extraction parameters
-        number_of_kernels_per_dim=[7, 5],
+        number_of_kernels_per_dim=[5, 7],
         # env dependencies (DO NOT CHANGE):
         number_of_actions=env.action_space.n,
     )
+    seed_rewards, seed_performance, seed_bottom_val, seed_bellman_err = [], [], [], []
+    for seed in seeds:
+        np.random.seed(seed)
+        env.seed(seed)
 
-    for episode_index in range(1, max_episodes + 1):
-        episode_gain, mean_delta = run_episode(env, solver, is_train=True, epsilon=epsilon_current)
+        rewards, performance, bottom_val, bellman_err = [], [], [], []
+        for episode_index in range(0, max_episodes):
+            episode_gain, mean_delta = run_episode(env, solver, is_train=True, epsilon=epsilon_current)
+            rewards.append(episode_gain)
+            bellman_err.append(mean_delta)
+            bottom_state = [0, 0]
+            bottom_val.append(solver.get_q_val(solver.get_features(bottom_state), solver.get_max_action(bottom_state)))
 
-        # reduce epsilon if required
-        epsilon_current *= epsilon_decrease
-        epsilon_current = max(epsilon_current, epsilon_min)
+            # reduce epsilon if required
+            epsilon_current *= epsilon_decrease
+            epsilon_current = max(epsilon_current, epsilon_min)
 
-        print(f'after {episode_index}, reward = {episode_gain}, epsilon {epsilon_current}, average error {mean_delta}')
+            print(
+                f'Episode {episode_index}, reward = {episode_gain}, epsilon {epsilon_current}, average error {mean_delta}')
 
-        # termination condition:
-        if episode_index % 10 == 9:
-            test_gains = [run_episode(env, solver, is_train=False, epsilon=0.)[0] for _ in range(10)]
-            mean_test_gain = np.mean(test_gains)
-            print(f'tested 10 episodes: mean gain is {mean_test_gain}')
-            if mean_test_gain >= -75.:
-                print(f'solved in {episode_index} episodes')
-                break
+            # termination condition:
+            if episode_index % 10 == 9:
+                test_gains = [run_episode(env, solver, is_train=False, epsilon=0.)[0] for _ in range(10)]
+                mean_test_gain = np.mean(test_gains)
+                performance.append(mean_test_gain)
+                print(f'tested 10 episodes: mean gain is {mean_test_gain}')
+                if mean_test_gain >= -75.:
+                    print(f'solved in {episode_index} episodes')
+                    break
 
-    run_episode(env, solver, is_train=False, render=True)
+        seed_rewards.append(rewards)
+        seed_performance.append(performance)
+        seed_bottom_val.append(bottom_val)
+        seed_bellman_err.append(bellman_err)
+        # run_episode(env, solver, is_train=False, render=True)
+
+    """plots"""
+    fig1, ax1 = plt.subplots()
+    x = list(range(max_episodes))
+    ax1.plot(x, seed_rewards[0], label='seed 1')
+    # ax1.plot(x, seed_rewards[1], label='seed 2')
+    # ax1.plot(x, seed_rewards[2], label='seed 3')
+    ax1.set_ylabel('Total Rewards')
+    ax1.set_title('Total Rewards by Episodes')
+    ax1.legend()
+    fig1.tight_layout()
+    plt.show()
+
+    fig2, ax2 = plt.subplots()
+    x = list(range(0, max_episodes, 10))
+    ax2.plot(x, seed_rewards[0], label='seed 1')
+    # ax2.plot(x, seed_rewards[1], label='seed 2')
+    # ax2.plot(x, seed_rewards[2], label='seed 3')
+    ax2.set_ylabel('Performance')
+    ax2.set_title('Performance by Episodes')
+    ax2.legend()
+    fig2.tight_layout()
+    plt.show()
+
+    fig3, ax3 = plt.subplots()
+    x = list(range(max_episodes))
+    ax3.plot(x, seed_rewards[0], label='seed 1')
+    # ax3.plot(x, seed_rewards[1], label='seed 2')
+    # ax3.plot(x, seed_rewards[2], label='seed 3')
+    ax3.set_ylabel('Bottom Hill Approx Value')
+    ax3.set_title('Bottom Hill Approx Value by Episodes')
+    ax3.legend()
+    fig3.tight_layout()
+    plt.show()
+
+    fig4, ax4 = plt.subplots()
+    x = list(range(max_episodes))
+    ax4.plot(x, seed_rewards[0], label='seed 1')
+    # ax4.plot(x, seed_rewards[1], label='seed 2')
+    # ax4.plot(x, seed_rewards[2], label='seed 3')
+    ax4.set_ylabel('Bellman Error')
+    ax4.set_title('Bellman Error by Episodes')
+    ax4.legend()
+    fig4.tight_layout()
+    plt.show()

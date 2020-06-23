@@ -43,7 +43,8 @@ class GamePlayer:
         return done
 
     def play_games(self, number_of_games, max_steps_per_game):
-        all_results = [self.play_game(max_steps_per_game) for _ in range(number_of_games)]
+        all_results = [self.play_game(max_steps_per_game, start_state=[np.random.uniform(-1.2, 0.6), 0.0])
+                       for _ in range(number_of_games)]
         success_rate = np.mean(all_results)
         print(f'success rate is {success_rate}')
         return success_rate
