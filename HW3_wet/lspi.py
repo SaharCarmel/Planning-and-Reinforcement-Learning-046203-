@@ -19,8 +19,9 @@ def compute_lspi_iteration(encoded_states, encoded_next_states, actions, rewards
     next_state_values = linear_policy.get_q_features(encoded_next_states, max_actions)
     for i in range(n_samples):
         b += rewards[i] * np.expand_dims(current_state_values[i], 1)
-        A += np.expand_dims(current_state_values[i], 1) * (
-                gamma * np.expand_dims(next_state_values[i], 0) - np.expand_dims(current_state_values[i], 0))
+        if not done_flags[i]:
+            A += np.expand_dims(current_state_values[i], 1) * (
+                    gamma * np.expand_dims(next_state_values[i], 0) - np.expand_dims(current_state_values[i], 0))
     next_w = np.linalg.inv(A / n_samples) @ b / n_samples
     return next_w
 
