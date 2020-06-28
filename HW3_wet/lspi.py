@@ -76,12 +76,12 @@ def run(current_seed, samples):
 
 if __name__ == '__main__':
 
-    """LSPI-pt-4"""
+    """LSPI-pt-5"""
     # seeds = [123, 111, 345]
     # samples = [100000]
     # name = 'seed'
 
-    """LSPI-pt-5"""
+    """LSPI-pt-6"""
     seeds = [123]
     samples = [150000, 100000, 50000]
     name = 'sample'
