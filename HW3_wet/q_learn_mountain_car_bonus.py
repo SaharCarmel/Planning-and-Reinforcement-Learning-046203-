@@ -111,18 +111,12 @@ def run_episode(env, solver, is_train=True, epsilon=None, max_steps=200, render=
 
 if __name__ == "__main__":
 
-    """seeds"""
-    # seeds = [123, 234, 345]
-    # epsilons = [0.1]
-    """epsilons"""
     seeds = [123]
-    # epsilons = [1.0, 0.75, 0.5, 0.3, 0.01]
-    epsilons = [0.1]
+    epsilons = [1]
 
     gamma = 0.999
     learning_rate = 0.05
-    epsilon_current = 0.1
-    epsilon_decrease = 1.
+    epsilon_decrease = 0.99
     epsilon_min = 0.01
 
     max_episodes = 10000
