@@ -82,7 +82,6 @@ if __name__ == '__main__':
                     break
             print('done lspi')
             seed_performance.append(performance)
-            evaluator.play_game(evaluation_max_steps_per_game, render=True)
 
 
     """plot seeds"""
