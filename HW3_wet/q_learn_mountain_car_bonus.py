@@ -80,7 +80,7 @@ def run_episode(env, solver, is_train=True, epsilon=None, max_steps=200, render=
     episode_gain = 0
     deltas = []
     if is_train:
-        start_position = np.random.uniform(env.min_position, env.goal_position - 0.01)
+        start_position = -0.5
         start_velocity = np.random.uniform(-env.max_speed, env.max_speed)
     else:
         start_position = -0.5
@@ -116,7 +116,8 @@ if __name__ == "__main__":
     # epsilons = [0.1]
     """epsilons"""
     seeds = [123]
-    epsilons = [1.0, 0.75, 0.5, 0.3, 0.01]
+    # epsilons = [1.0, 0.75, 0.5, 0.3, 0.01]
+    epsilons = [0.1]
 
     gamma = 0.999
     learning_rate = 0.05
@@ -197,7 +198,7 @@ if __name__ == "__main__":
         ax1 = fig.add_subplot()
         for i in range(len(epsilons)):
             x = list(range(1, len(seed_rewards[i]) + 1))
-            x = [j*10 for j in x]
+            x = [i*10 for i in x]
             ax1.plot(x, seed_rewards[i], label='epsilon =' + str(epsilons[i]))
         ax1.set_xlabel('Episodes')
         ax1.set_ylabel('Total Rewards')
