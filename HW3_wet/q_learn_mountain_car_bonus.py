@@ -171,79 +171,19 @@ if __name__ == "__main__":
             seed_performance.append(performance)
             seed_bottom_val.append(bottom_val)
             seed_bellman_err_avg.append(bellman_err_avg)
-        # run_episode(env, solver, is_train=False, render=True)
-
-            if len(epsilons) > 1:
-                fig = plt.figure()
-                ax1 = fig.add_subplot()
-                x = list(range(1, len(rewards) + 1))
-                ax1.plot(x, rewards, label='epsilon =' + str(epsilon_current))
-                ax1.set_xlabel('Episodes')
-                ax1.set_ylabel('Total Rewards')
-                ax1.set_title('Total Rewards by Episodes')
-                ax1.legend()
-                fig.tight_layout()
-                plt.show()
-
+        run_episode(env, solver, is_train=False, render=True)
 
     """plots"""
-    if len(epsilons) > 1:
-        fig = plt.figure()
-        ax1 = fig.add_subplot()
-        for i in range(len(epsilons)):
-            x = list(range(1, len(seed_rewards[i]) + 1))
-            x = [i*10 for i in x]
-            ax1.plot(x, seed_rewards[i], label='epsilon =' + str(epsilons[i]))
-        ax1.set_xlabel('Episodes')
-        ax1.set_ylabel('Total Rewards')
-        ax1.set_title('Total Rewards by Episodes')
-        ax1.legend()
-        fig.tight_layout()
-        plt.show()
+    fig = plt.figure()
+    ax1 = fig.add_subplot()
+    for i in range(len(epsilons)):
+        x = list(range(1, len(seed_performance[i]) + 1))
+        x = [j*10 for j in x]
+        ax1.plot(x, seed_performance[i], label='epsilon =' + str(epsilons[i]))
+    ax1.set_xlabel('Episodes')
+    ax1.set_ylabel('Performance')
+    ax1.set_title('Performance by Episodes')
+    ax1.legend()
+    fig.tight_layout()
+    plt.show()
 
-    else:
-        """plots"""
-        fig = plt.figure()
-        ax1 = fig.add_subplot()
-        for i in range(len(seeds)):
-            x = list(range(1, len(seed_rewards[i]) + 1))
-            ax1.plot(x, seed_rewards[i], label='seed =' + str(seeds[i]))
-        ax1.set_xlabel('Episodes')
-        ax1.set_ylabel('Total Rewards')
-        ax1.set_title('Total Rewards by Episodes')
-        ax1.legend()
-        fig.tight_layout()
-        plt.show()
-
-        fig2, ax2 = plt.subplots()
-        for i in range(len(seeds)):
-            x = list(range(1, len(seed_performance[i]) + 1))
-            ax2.plot(x, seed_performance[i], label='seed =' + str(seeds[i]))
-        ax2.set_xlabel('Episodes')
-        ax2.set_ylabel('Performance')
-        ax2.set_title('Performance by Episodes')
-        ax2.legend()
-        fig2.tight_layout()
-        plt.show()
-
-        fig3, ax3 = plt.subplots()
-        for i in range(len(seeds)):
-            x = list(range(1, len(seed_bottom_val[i]) + 1))
-            ax3.plot(x, seed_bottom_val[i], label='seed =' + str(seeds[i]))
-        ax3.set_xlabel('Episodes')
-        ax3.set_ylabel('Bottom Hill Approx Value')
-        ax3.set_title('Bottom Hill Approx Value by Episodes')
-        ax3.legend()
-        fig3.tight_layout()
-        plt.show()
-
-        fig4, ax4 = plt.subplots()
-        for i in range(len(seeds)):
-            x = list(range(1, len(seed_bellman_err_avg[i]) + 1))
-            ax4.plot(x, seed_bellman_err_avg[i], label='seed =' + str(seeds[i]))
-        ax4.set_xlabel('Episodes')
-        ax4.set_ylabel('Bellman Error')
-        ax4.set_title('Bellman Error by Episodes')
-        ax4.legend()
-        fig4.tight_layout()
-        plt.show()

@@ -27,84 +27,82 @@ def compute_lspi_iteration(encoded_states, encoded_next_states, actions, rewards
     return next_w
 
 
-if __name__ == '__main__':
-
-    # seeds = [123, 111, 345]
-    # samples = [100000]
-
-    seeds = [123]
-    samples = [150000, 100000, 50000]
-
+def run(current_seed, samples):
     number_of_kernels_per_dim = [12, 10]
     gamma = 0.99
     w_updates = 20
     evaluation_number_of_games = 50
     evaluation_max_steps_per_game = 200
 
-    seed_performance = []
+    np.random.seed(current_seed)
+
+    env = MountainCarWithResetEnv()
+    # collect data
+    states, actions, rewards, next_states, done_flags = DataCollector(env).collect_data(samples)
+    # get data success rate
+    data_success_rate = np.sum(rewards) / len(rewards)
+    print(f'success rate {data_success_rate}')
+    # standardize data
+    data_transformer = DataTransformer()
+    data_transformer.set_using_states(np.concatenate((states, next_states), axis=0))
+    states = data_transformer.transform_states(states)
+    next_states = data_transformer.transform_states(next_states)
+    # process with radial basis functions
+    feature_extractor = RadialBasisFunctionExtractor(number_of_kernels_per_dim)
+    # encode all states    encoded_states = feature_extractor.encode_states_with_radial_basis_functions(states)
+    encoded_states = feature_extractor.encode_states_with_radial_basis_functions(states)
+    encoded_next_states = feature_extractor.encode_states_with_radial_basis_functions(next_states)
+    # set a new linear policy
+    linear_policy = LinearPolicy(feature_extractor.get_number_of_features(), 3, True)
+    # but set the weights as random
+    linear_policy.set_w(np.random.uniform(size=linear_policy.w.shape))
+    # start an object that evaluates the success rate over time
+    evaluator = GamePlayer(env, data_transformer, feature_extractor, linear_policy)
+    performance = []
+    for lspi_iteration in range(w_updates):
+        print(f'starting lspi iteration {lspi_iteration}')
+
+        new_w = compute_lspi_iteration(
+            encoded_states, encoded_next_states, actions, rewards, done_flags, linear_policy, gamma
+        )
+        norm_diff = linear_policy.set_w(new_w)
+        performance.append(evaluator.play_games(evaluation_number_of_games, evaluation_max_steps_per_game))
+
+        if norm_diff < 0.00001:
+            break
+    print('done lspi')
+    return performance
+
+
+if __name__ == '__main__':
+
+    """LSPI-pt-4"""
+    # seeds = [123, 111, 345]
+    # samples = [100000]
+    # name = 'seed'
+
+    """LSPI-pt-5"""
+    seeds = [123]
+    samples = [150000, 100000, 50000]
+    name = 'sample'
+
+    overall_performance = []
     for seed in seeds:
         for samples_to_collect in samples:
-            np.random.seed(seed)
-
-            env = MountainCarWithResetEnv()
-            # collect data
-            states, actions, rewards, next_states, done_flags = DataCollector(env).collect_data(samples_to_collect)
-            # get data success rate
-            data_success_rate = np.sum(rewards) / len(rewards)
-            print(f'success rate {data_success_rate}')
-            # standardize data
-            data_transformer = DataTransformer()
-            data_transformer.set_using_states(np.concatenate((states, next_states), axis=0))
-            states = data_transformer.transform_states(states)
-            next_states = data_transformer.transform_states(next_states)
-            # process with radial basis functions
-            feature_extractor = RadialBasisFunctionExtractor(number_of_kernels_per_dim)
-            # encode all states    encoded_states = feature_extractor.encode_states_with_radial_basis_functions(states)
-            encoded_states = feature_extractor.encode_states_with_radial_basis_functions(states)
-            encoded_next_states = feature_extractor.encode_states_with_radial_basis_functions(next_states)
-            # set a new linear policy
-            linear_policy = LinearPolicy(feature_extractor.get_number_of_features(), 3, True)
-            # but set the weights as random
-            linear_policy.set_w(np.random.uniform(size=linear_policy.w.shape))
-            # start an object that evaluates the success rate over time
-            evaluator = GamePlayer(env, data_transformer, feature_extractor, linear_policy)
-            performance = []
-            for lspi_iteration in range(w_updates):
-                print(f'starting lspi iteration {lspi_iteration}')
-
-                new_w = compute_lspi_iteration(
-                    encoded_states, encoded_next_states, actions, rewards, done_flags, linear_policy, gamma
-                )
-                norm_diff = linear_policy.set_w(new_w)
-                performance.append(evaluator.play_games(evaluation_number_of_games, evaluation_max_steps_per_game))
-
-                if norm_diff < 0.00001:
-                    break
-            print('done lspi')
-            seed_performance.append(performance)
+            run_performance = run(seed, samples_to_collect)
+            overall_performance.append(run_performance)
 
 
-    """plot seeds"""
-    # fig = plt.figure()
-    # ax1 = fig.add_subplot()
-    # for i in range(len(seeds)):
-    #     x = list(range(1, len(seed_performance[i]) + 1))
-    #     ax1.plot(x, seed_performance[i], label='seed =' + str(seeds[i]))
-    # ax1.set_ylabel('Performance')
-    # ax1.set_xlabel('w-updates')
-    # ax1.legend()
-    # fig.tight_layout()
-    # plt.show()
-
-    """plot samples"""
+    """plot"""
     fig = plt.figure()
     ax1 = fig.add_subplot()
-    for i in range(len(samples)):
-        x = list(range(1, len(seed_performance[i]) + 1))
-        ax1.plot(x, seed_performance[i], label='# samples =' + str(samples[i]))
+    for i in range(len(seeds)):
+        x = list(range(1, len(overall_performance[i]) + 1))
+        ax1.plot(x, overall_performance[i], label=name + ' = ' + str(seeds[i]))
     ax1.set_ylabel('Performance')
     ax1.set_xlabel('w-updates')
     ax1.legend()
     fig.tight_layout()
     plt.show()
+
 
